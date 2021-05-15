@@ -1,9 +1,9 @@
 import asyncio
 import os
 
-import discord
 import requests
 
+from typing import Optional
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -11,7 +11,14 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 API_URL = os.getenv('API_URL')
 
-bot = commands.Bot(command_prefix='!')
+help_command = commands.DefaultHelpCommand(
+    no_category='Commands'
+)
+
+bot = commands.Bot(command_prefix='!',
+                   description='A simple discussion moderator about songs using AWS',
+                   help_command=help_command
+                   )
 
 q_list = [
     'Your name',
@@ -24,7 +31,7 @@ def get_song_title(message):
     end = message.find('*', start + 1)
     if start == -1 or end == -1:
         return ""
-    return message[(start+1):end]
+    return message[(start + 1):end]
 
 
 @bot.event
@@ -37,18 +44,44 @@ async def on_message(message):
     if message.author == bot.user:
         return
     title = get_song_title(message.content)
-    print(title)
+
+    if title:
+        print(title)
+        # TODO: Analysis of message
+        return
+
     await bot.process_commands(message)
 
 
+@bot.command(name='summary', help='Sends a daily summary')
+async def summary(ctx):
+    # TODO: Get summary from database
+    await ctx.send('summary')
+
+
+@bot.command(name='recommend', help='Get recommended songs')
+async def recommend(ctx, number_of_songs: Optional[int]):
+    number_of_songs = number_of_songs or 1
+    # TODO: Get songs
+    await ctx.send('List of songs')
+
+
 action_types = ['delete', 'set']
-param_types = ['age, listening-behaviour']
+param_types = ['name', 'age', 'listening-behaviour']
+
+
+def set_handler(param, value):
+    # TODO: change param in database
+    return True
+
 
 @bot.command(name='account', help='Manage your account')
 async def account(ctx, action, param=None, value=None):
+    if action not in action_types:
+        return
 
     def check():
-        if action == 'delete' or param is None or value is None or
+        if param not in param_types or value is None:
             return
 
     if action == 'delete':
@@ -56,7 +89,7 @@ async def account(ctx, action, param=None, value=None):
         await ctx.send(f'Information about {ctx.message.author.mention} deleted')
     elif action == 'set':
         check()
-
+        set_handler(param, value)
         await ctx.send(action)
 
 
