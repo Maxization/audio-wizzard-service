@@ -1,0 +1,51 @@
+name: deploy LoadSpotifyData
+on: 
+  push:
+    branches: [ main ]
+    paths:
+      - LoadSpotifyData/**
+jobs:
+  # Deploy infrastructure resources like ECR repository and load balancer.
+  # This job will run on every code change to the master branch, but will only deploy
+  # changes if the infrastructure CloudFormation template in the repository have changed.
+  deploy-infrastructure:
+    name: Deploy infrastructure
+    runs-on: ubuntu-latest
+    outputs:
+      env-name: ${{ steps.env-name.outputs.environment }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    # The "environment name" is used as the base for CloudFormation stack names,
+    # and is derived from the GitHub repository name.
+    # For example, the repo 'Octocat/Hello-World' would have the environment name
+    # 'Octocat-Hello-World' and would deploy a stack name 'Octocat-Hello-World-ecr-repo'.
+    - name: Configure environment name
+      id: env-name
+      env:
+        REPO: ${{ github.repository }}
+      run: |
+        ENVIRONMENT=`echo $REPO | tr "/" "-"`
+        echo "Environment name: $ENVIRONMENT"
+        echo "::set-output name=environment::$ENVIRONMENT"
+
+    - name: Configure AWS credentials
+      id: creds
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.MAIN_REGION }}
+
+    - name: Deploy infrastructure with CloudFormation
+      id: load-spotify-data-stack
+      uses: aws-actions/aws-cloudformation-github-deploy@v1
+      with:
+        name: ${{ steps.env-name.outputs.environment }}-spotify-data
+        template: LoadSpotifyData/S3WithSpotifyData.cfn.yaml
+        no-fail-on-empty-changeset: "1"
+        termination-protection: "1"
+        parameter-overrides: >-
+          EnvironmentName=${{ steps.env-name.outputs.environment }},
+          BucketName=spotify-data
