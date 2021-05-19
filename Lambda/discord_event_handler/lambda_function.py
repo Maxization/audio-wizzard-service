@@ -57,18 +57,20 @@ def lambda_handler(event, context):
         return PING_PONG
 
     print(f"after ping")  # debug print
+    
+    command_event = {
+        "appId": body['application_id'],
+        "data": body['data'],
+        "user": body['member']['user'],
+        "token": body['token']
+    }
 
     lambda_client = boto3.client('lambda')
-    lambda_client.invoke(FunctionName='command_handler',
+    response = lambda_client.invoke(FunctionName='command_handler',
                          InvocationType='Event',
-                         Payload=json.dumps(event))
-
+                         Payload=json.dumps(command_event))
+    
+    print(response)
     return {
-        "type": RESPONSE_TYPES['MESSAGE_WITH_SOURCE'],
-        "data": {
-            "tts": False,
-            "content": "BEEP BOOP",
-            "embeds": [],
-            "allowed_mentions": []
-        }
+        "type": RESPONSE_TYPES['ACK_WITH_SOURCE']
     }
