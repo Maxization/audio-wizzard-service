@@ -43,6 +43,7 @@ def ping_pong(body):
 
 def lambda_handler(event, context):
     print(f"event {event}")  # debug print
+    
     # verify the signature
     try:
         verify_signature(event)
