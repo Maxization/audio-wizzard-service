@@ -1,18 +1,17 @@
 import json
 import requests
 
+
 def lambda_handler(event, context):
-    # TODO implement
-    url = f"https://discord.com/api/v8/webhooks/{event['appId']}/{event['token']}"
-    json = {
+    data = json.loads(event['Records'][0]['body'])
+    text = data['message']
+
+    url = f"https://discord.com/api/v8/webhooks/{data['appId']}/{data['token']}"
+    response = {
         "tts": "false",
-        "content": "Pls work !",
+        "content": text,
         "embeds": [],
         "allowed_mentions": []
     }
-    
-    r = requests.post(url, json=json)
-    print(r)
-    return {
-        'statusCode': 200
-    }
+
+    return requests.post(url, json=response)

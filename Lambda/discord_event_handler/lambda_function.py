@@ -15,8 +15,8 @@ RESPONSE_TYPES = {
 
 
 def get_public_key():
-    secretsmanager = boto3.client('secretsmanager')
-    result = secretsmanager.get_secret_value(
+    secrets_manager = boto3.client('secretsmanager')
+    result = secrets_manager.get_secret_value(
         SecretId="DiscordPublicKey"
     )['SecretString']
     return json.loads(result)['DiscordPublicKey']
@@ -43,7 +43,7 @@ def ping_pong(body):
 
 def lambda_handler(event, context):
     print(f"event {event}")  # debug print
-    
+
     # verify the signature
     try:
         verify_signature(event)
@@ -57,7 +57,7 @@ def lambda_handler(event, context):
         return PING_PONG
 
     print(f"after ping")  # debug print
-    
+
     command_event = {
         "appId": body['application_id'],
         "data": body['data'],
@@ -65,11 +65,13 @@ def lambda_handler(event, context):
         "token": body['token']
     }
 
+    print(command_event)
+
     lambda_client = boto3.client('lambda')
     response = lambda_client.invoke(FunctionName='command_handler',
-                         InvocationType='Event',
-                         Payload=json.dumps(command_event))
-    
+                                    InvocationType='Event',
+                                    Payload=json.dumps(command_event))
+
     print(response)
     return {
         "type": RESPONSE_TYPES['ACK_WITH_SOURCE']
