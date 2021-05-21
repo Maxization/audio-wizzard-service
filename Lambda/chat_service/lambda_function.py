@@ -14,4 +14,6 @@ def lambda_handler(event, context):
         "allowed_mentions": []
     }
 
-    return requests.post(url, json=response)
+    response = requests.post(url, json=response)
+
+    return response.status_code
