@@ -1,0 +1,293 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Metadata": {
+
+    },
+    "Parameters" : {
+        "BucketName": {
+            "Description": "S3 bucket for database data.",
+            "Type": "String"
+        },
+        "UsersFileName": {
+            "Description": "S3 filename for users.",
+            "Type": "String"
+        },
+        "SongsFileName": {
+            "Description": "S3 filename for songs.",
+            "Type": "String"
+        },
+        "DynamoDBTableUsersName": {
+            "Description": "Table for storing users.",
+            "Type": "String"
+        },
+        "DynamoDBTableSongsName": {
+            "Description": "Table for storing songs.",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "UsersDynamoDBTable":{
+            "Type": "AWS::DynamoDB::Table",
+            "Properties":{
+                "TableName": {"Ref" : "DynamoDBTableUsersName"},
+                "BillingMode": "PAY_PER_REQUEST",
+                "AttributeDefinitions":[
+                    {
+                        "AttributeName": "USER_ID",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema":[
+                    {
+                        "AttributeName": "USER_ID",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "Tags":[
+                    {
+                        "Key": "Name",
+                        "Value": {"Ref" : "DynamoDBTableUsersName"}
+                    }
+                ]
+            }
+        },
+        "SongsDynamoDBTable":{
+            "Type": "AWS::DynamoDB::Table",
+            "Properties":{
+                "TableName": {"Ref" : "DynamoDBTableSongsName"},
+                "BillingMode": "PAY_PER_REQUEST",
+                "AttributeDefinitions":[
+                    {
+                        "AttributeName": "ITEM_ID",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema":[
+                    {
+                        "AttributeName": "ITEM_ID",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "Tags":[
+                    {
+                        "Key": "Name",
+                        "Value": {"Ref" : "DynamoDBTableSongsName"}
+                    }
+                ]
+            }
+        },
+        "LambdaForDBRole" : {
+          "Type" : "AWS::IAM::Role",
+          "Properties" : {
+            "AssumeRolePolicyDocument": {
+              "Version" : "2012-10-17",
+              "Statement" : [
+                {
+                  "Effect" : "Allow",
+                  "Principal" : {
+                    "Service" : ["lambda.amazonaws.com","s3.amazonaws.com"]
+                  },
+                  "Action" : [
+                    "sts:AssumeRole"
+                  ]
+                }
+              ]
+            },
+            "Path" : "/",
+            "ManagedPolicyArns":["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole","arn:aws:iam::aws:policy/AWSLambdaInvocation-DynamoDB","arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"],
+            "Policies": [{
+					         "PolicyName": "policyname",
+					         "PolicyDocument": {
+						               "Version": "2012-10-17",
+						               "Statement": [{
+                                    "Effect": "Allow",
+  							                    "Resource": "*",
+							                      "Action": [
+								                              "dynamodb:PutItem",
+                                                              "dynamodb:BatchWriteItem"
+							                      ]
+						              }]
+					         }
+				    }]
+          }
+       },
+        "UsersCsvToDDBLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Handler": "index.lambda_handler",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaForDBRole",
+                        "Arn"
+                    ]
+                },
+                "Code": {
+                    "ZipFile": {
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "import json",
+                                "import boto3",
+                                "import os",
+                                "import csv",
+                                "import codecs",
+                                "import sys",
+                                "import collections",
+                                "",
+                                "s3 = boto3.resource('s3')",
+                                "dynamodb = boto3.resource('dynamodb')",
+                                "",
+                                "bucket = os.environ['bucket']",
+                                "keyUsers = os.environ['keyUsers']",
+                                "tableUsersName = os.environ['tableUsers']",
+                                "",
+                                "def lambda_handler(event, context):",
+                                "",  
+                                "",
+                                "   #get() does not store in memory",
+                                "   try:",
+                                "       obj = s3.Object(bucket, keyUsers).get()['Body']",
+                                "   except:",
+                                "       print(\"S3 Object could not be opened. Check environment variable. \")",
+                                "   try:",
+                                "       table = dynamodb.Table(tableUsersName)",
+                                "   except:",
+                                "       print(\"Error loading DynamoDB table. Check if table was created correctly and environment variable.\")",
+                                "",
+                                "   batch_size = 100",
+                                "   batch = []",
+                                "",
+                                "   #DictReader is a generator; not stored in memory",
+                                "   for row in csv.DictReader(codecs.getreader('utf-8')(obj)):",
+                                "      if len(batch) >= batch_size:",
+                                "         write_to_dynamo(batch)",
+                                "         batch.clear()",
+                                "",
+                                "      batch.append(row)",
+                                "",
+                                "   if batch:",
+                                "      write_to_dynamo(batch)",
+                                "",
+                                "   return {",
+                                "      'statusCode': 200,",
+                                "      'body': json.dumps('Uploaded to DynamoDB Table')",
+                                "   }",
+                                "",
+                                "",    
+                                "def write_to_dynamo(rows):",
+                                "   try:",
+                                "      table = dynamodb.Table(tableUsersName)",
+                                "   except:",
+                                "      print(\"Error loading DynamoDB table. Check if table was created correctly and environment variable.\")",
+                                "",
+                                "   try:",
+                                "      with table.batch_writer() as batch:",
+                                "         for i in range(len(rows)):",
+                                "            batch.put_item(",
+                                "               Item=collections.OrderedDict([('USER_ID', rows[i]['\\ufeffUSER_ID']), ('AGE', rows[i]['AGE']), ('GENDER', rows[i]['GENDER'])])",
+                                "            )",
+                                "   except:",
+                                "      print(\"Error executing batch_writer\")"
+                            ]
+                        ]
+                    }
+                },
+                "Runtime": "python3.7",
+                "Timeout": 900,
+                "MemorySize": 3008,
+                "Environment" : {
+                    "Variables" : {"bucket" : { "Ref" : "BucketName" }, "keyUsers" : { "Ref" : "UsersFileName" },"tableUsers" : { "Ref" : "DynamoDBTableUsersName" }}
+                }
+            }
+        },
+        "SongsCsvToDDBLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Handler": "index.lambda_handler",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaForDBRole",
+                        "Arn"
+                    ]
+                },
+                "Code": {
+                    "ZipFile": {
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "import json",
+                                "import boto3",
+                                "import os",
+                                "import csv",
+                                "import codecs",
+                                "import sys",
+                                "import collections",
+                                "",
+                                "s3 = boto3.resource('s3')",
+                                "dynamodb = boto3.resource('dynamodb')",
+                                "",
+                                "bucket = os.environ['bucket']",
+                                "keySongs = os.environ['keySongs']",
+                                "tableSongsName = os.environ['tableSongs']",
+                                "",
+                                "def lambda_handler(event, context):",
+                                "",  
+                                "",
+                                "   #get() does not store in memory",
+                                "   try:",
+                                "       obj = s3.Object(bucket, keySongs).get()['Body']",
+                                "   except:",
+                                "       print(\"S3 Object could not be opened. Check environment variable. \")",
+                                "   try:",
+                                "       table = dynamodb.Table(tableSongsName)",
+                                "   except:",
+                                "       print(\"Error loading DynamoDB table. Check if table was created correctly and environment variable.\")",
+                                "",
+                                "   batch_size = 100",
+                                "   batch = []",
+                                "",
+                                "   #DictReader is a generator; not stored in memory",
+                                "   for row in csv.DictReader(codecs.getreader('utf-8')(obj), delimiter=\"~\"):",
+                                "      if len(batch) >= batch_size:",
+                                "         write_to_dynamo(batch)",
+                                "         batch.clear()",
+                                "",
+                                "      batch.append(row)",
+                                "",
+                                "   if batch:",
+                                "      write_to_dynamo(batch)",
+                                "",
+                                "   return {",
+                                "      'statusCode': 200,",
+                                "      'body': json.dumps('Uploaded to DynamoDB Table')",
+                                "   }",
+                                "",
+                                "",    
+                                "def write_to_dynamo(rows):",
+                                "   try:",
+                                "      table = dynamodb.Table(tableSongsName)",
+                                "   except:",
+                                "      print(\"Error loading DynamoDB table. Check if table was created correctly and environment variable.\")",
+                                "",
+                                "   try:",
+                                "      with table.batch_writer() as batch:",
+                                "         for i in range(len(rows)):",
+                                "            batch.put_item(",
+                                "               Item=collections.OrderedDict([('ITEM_ID', rows[i]['\\ufeffITEM_ID']), ('NAME', rows[i]['NAME']), ('ARTISTS', rows[i]['ARTISTS'])])",
+                                "            )",
+                                "   except:",
+                                "      print(\"Error executing batch_writer\")"
+                            ]
+                        ]
+                    }
+                },
+                "Runtime": "python3.7",
+                "Timeout": 900,
+                "MemorySize": 3008,
+                "Environment" : {
+                    "Variables" : {"bucket" : { "Ref" : "BucketName" }, "keySongs" : { "Ref" : "SongsFileName" },"tableSongs" : { "Ref" : "DynamoDBTableSongsName" }}
+                }
+            }
+        }
+    }
+}
