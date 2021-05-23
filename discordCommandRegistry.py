@@ -42,20 +42,10 @@ json_account = {
                     "required": False,
                 },
                 {
-                    "name": "listening-behaviour",
-                    "description": "todo",
+                    "name": "gender",
+                    "description": "set gender",
                     "type": 3,
                     "required": False,
-                    "choices": [
-                        {
-                            "name": "1",
-                            "value": "behaviour_1"
-                        },
-                        {
-                            "name": "2",
-                            "value": "behaviour_2"
-                        }
-                    ]
                 }
             ],
         }
