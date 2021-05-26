@@ -3,18 +3,38 @@ import string
 import boto3
 from boto3.dynamodb.conditions import Key
 
+personalize_events = boto3.client(service_name='personalize-events')
+
 sqs = boto3.resource('sqs')
 responseQueue = sqs.get_queue_by_name(QueueName="chat_service_queue")
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('DynamoDBTableUsersName')
 
+
+def add_user_to_personalize(user):
+    user_properties={}
+    
+    if 'AGE' in user:
+        user_properties['AGE'] = user['AGE']
+    if 'GENDER' in user:
+        user_properties['GENDER'] = user['GENDER']
+    
+    personalize_events.put_users(
+        datasetArn = 'arn:aws:personalize:eu-central-1:043035977035:dataset/user-songs-group/USERS',
+        users = [{
+            'userId': user['USER_ID'],
+            'properties': json.dumps(user_properties)   
+        }]
+    )
+
+
 def lambda_handler(event, context):
     data=json.loads(event['Records'][0]['body'])
     
     queryResult = table.query(KeyConditionExpression=Key('USER_ID').eq(data['user']['id']))
     if queryResult['Count'] == 0:
-        user = { "USER_ID": f"\"{data['user']['id']}\"" }
+        user = { "USER_ID": f"{data['user']['id']}" }
     else:
         user = queryResult['Items'][0]
     
@@ -31,6 +51,7 @@ def lambda_handler(event, context):
         if data['data']['options'][0] == { "name": "set", "type": 1 }:
             if queryResult['Count'] == 0:
                 table.put_item(Item=user)
+                add_user_to_personalize(user)
                 message = "Account created without details!"
             else:
                 message = "Nothing to update."
@@ -38,6 +59,7 @@ def lambda_handler(event, context):
             for opt in data['data']['options'][0]['options']:
                 user[opt['name'].upper()] = f"{opt['value']}"
             table.put_item(Item=user)
+            add_user_to_personalize(user)
             if queryResult['Count'] == 0:
                 message = "Account created with details!"
             else:
