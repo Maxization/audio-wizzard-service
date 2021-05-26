@@ -3,9 +3,8 @@ import boto3
 
 sqs = boto3.resource('sqs')
 
+
 def account_handler(event):
-    options = event['data']['options']
-    action = options[0]['name']
     account_event = {
         "appId": event['appId'],
         "data": event['data'],
@@ -22,7 +21,7 @@ def review_handler(event):
     options = event['data']['options']
     content = options[0]['value']
     
-    songRatesQueue = sqs.get_queue_by_name(QueueName="song_rates_queue")
+    song_rates_queue = sqs.get_queue_by_name(QueueName="song_rates_queue")
 
     analyze_event = {
         "appId": event['appId'],
@@ -31,7 +30,7 @@ def review_handler(event):
         "token": event['token']
     }
 
-    return songRatesQueue.send_message(MessageBody=json.dumps(analyze_event))
+    return song_rates_queue.send_message(MessageBody=json.dumps(analyze_event))
 
 
 def recommend_handler(event):
@@ -41,7 +40,7 @@ def recommend_handler(event):
     else:
         number = 1
     
-    recommendationQueue = sqs.get_queue_by_name(QueueName="recommendation_queue")
+    recommendation_queue = sqs.get_queue_by_name(QueueName="recommendation_queue")
     
     recommendation_event = {
         "appId": event['appId'],
@@ -50,7 +49,7 @@ def recommend_handler(event):
         "token": event['token']
     }
     
-    return recommendationQueue.send_message(MessageBody=json.dumps(recommendation_event))
+    return recommendation_queue.send_message(MessageBody=json.dumps(recommendation_event))
 
 
 def lambda_handler(event, context):

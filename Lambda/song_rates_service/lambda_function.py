@@ -40,15 +40,15 @@ def query_item(title):
     return response['Items']
 
 
-def add_user_song_rating(event, rating, itemId):
+def add_user_song_rating(event, rating, item_id):
     interaction_properties = {
-        'rating': str(int(rating)),
-        'itemId': itemId
+        'rating': int(rating),
+        'itemId': item_id
     }
 
     print(json.dumps(interaction_properties))
 
-    response = personalize_events.put_events(
+    personalize_events.put_events(
         trackingId='1d2eb1be-2cef-4569-8c3b-12ba7d3cbc08',
         userId=event['user']['id'],
         sessionId=str(uuid.uuid4()),
