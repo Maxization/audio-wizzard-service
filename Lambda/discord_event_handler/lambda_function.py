@@ -49,13 +49,12 @@ def lambda_handler(event, context):
         verify_signature(event)
     except Exception as e:
         raise Exception(f"[UNAUTHORIZED] Invalid request signature: {e}")
-
     print(f"after verify")  # debug print
+    
     # check if message is a ping
     body = event.get('body-json')
     if ping_pong(body):
         return PING_PONG
-
     print(f"after ping")  # debug print
     
     command_event = {
@@ -64,15 +63,14 @@ def lambda_handler(event, context):
         "user": body['member']['user'],
         "token": body['token']
     }
-    
     print(command_event)
 
     lambda_client = boto3.client('lambda')
     response = lambda_client.invoke(FunctionName='command_handler',
                          InvocationType='Event',
                          Payload=json.dumps(command_event))
-    
     print(response)
+    
     return {
         "type": RESPONSE_TYPES['ACK_WITH_SOURCE']
     }

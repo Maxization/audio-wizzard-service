@@ -60,12 +60,28 @@
                     {
                         "AttributeName": "ITEM_ID",
                         "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "NAME",
+                        "AttributeType": "S"
                     }
                 ],
                 "KeySchema":[
                     {
                         "AttributeName": "ITEM_ID",
                         "KeyType": "HASH"
+                    }
+                ],
+                "GlobalSecondaryIndexes" : [
+                    {
+                        "IndexName" : "NAME-index",
+                        "KeySchema" : [
+                            {
+                                "AttributeName" : "NAME",
+                                "KeyType" : "HASH"
+                            }
+                        ],                           
+                        "Projection" : { "ProjectionType" : "ALL" }
                     }
                 ],
                 "Tags":[
@@ -141,10 +157,8 @@
                                 "keyUsers = os.environ['keyUsers']",
                                 "tableUsersName = os.environ['tableUsers']",
                                 "",
-                                "def lambda_handler(event, context):",
-                                "",  
                                 "",
-                                "   #get() does not store in memory",
+                                "def lambda_handler(event, context):",
                                 "   try:",
                                 "       obj = s3.Object(bucket, keyUsers).get()['Body']",
                                 "   except:",
@@ -157,12 +171,10 @@
                                 "   batch_size = 100",
                                 "   batch = []",
                                 "",
-                                "   #DictReader is a generator; not stored in memory",
-                                "   for row in csv.DictReader(codecs.getreader('utf-8')(obj)):",
+                                "   for row in csv.DictReader(codecs.getreader('utf-8-sig')(obj)):",
                                 "      if len(batch) >= batch_size:",
                                 "         write_to_dynamo(batch)",
                                 "         batch.clear()",
-                                "",
                                 "      batch.append(row)",
                                 "",
                                 "   if batch:",
@@ -184,7 +196,7 @@
                                 "      with table.batch_writer() as batch:",
                                 "         for i in range(len(rows)):",
                                 "            batch.put_item(",
-                                "               Item=collections.OrderedDict([('USER_ID', rows[i]['\\ufeffUSER_ID']), ('AGE', rows[i]['AGE']), ('GENDER', rows[i]['GENDER'])])",
+                                "               Item=collections.OrderedDict([('USER_ID', rows[i]['USER_ID']), ('AGE', rows[i]['AGE']), ('GENDER', rows[i]['GENDER'])])",
                                 "            )",
                                 "   except:",
                                 "      print(\"Error executing batch_writer\")"
@@ -230,10 +242,8 @@
                                 "keySongs = os.environ['keySongs']",
                                 "tableSongsName = os.environ['tableSongs']",
                                 "",
-                                "def lambda_handler(event, context):",
-                                "",  
                                 "",
-                                "   #get() does not store in memory",
+                                "def lambda_handler(event, context):",
                                 "   try:",
                                 "       obj = s3.Object(bucket, keySongs).get()['Body']",
                                 "   except:",
@@ -246,12 +256,10 @@
                                 "   batch_size = 100",
                                 "   batch = []",
                                 "",
-                                "   #DictReader is a generator; not stored in memory",
-                                "   for row in csv.DictReader(codecs.getreader('utf-8')(obj), delimiter=\"~\"):",
+                                "   for row in csv.DictReader(codecs.getreader('utf-8-sig')(obj), delimiter=\"~\", quoting=csv.QUOTE_NONE):",
                                 "      if len(batch) >= batch_size:",
                                 "         write_to_dynamo(batch)",
                                 "         batch.clear()",
-                                "",
                                 "      batch.append(row)",
                                 "",
                                 "   if batch:",
@@ -273,7 +281,7 @@
                                 "      with table.batch_writer() as batch:",
                                 "         for i in range(len(rows)):",
                                 "            batch.put_item(",
-                                "               Item=collections.OrderedDict([('ITEM_ID', rows[i]['\\ufeffITEM_ID']), ('NAME', rows[i]['NAME']), ('ARTISTS', rows[i]['ARTISTS'])])",
+                                "               Item=collections.OrderedDict([('ITEM_ID', rows[i]['ITEM_ID']), ('NAME', rows[i]['NAME']), ('ARTISTS', rows[i]['ARTISTS'])])",
                                 "            )",
                                 "   except:",
                                 "      print(\"Error executing batch_writer\")"

@@ -2,17 +2,38 @@ import json
 import boto3
 from boto3.dynamodb.conditions import Key
 
-sqs = boto3.resource('sqs')
-
 personalizeRt = boto3.client('personalize-runtime')
-responseQueue = sqs.get_queue_by_name(QueueName="chat_service_queue")
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('DynamoDBTableSongsName')
 
+sqs = boto3.resource('sqs')
+responseQueue = sqs.get_queue_by_name(QueueName="chat_service_queue")
+
+dynamodb = boto3.resource('dynamodb')
+
+
+def query_users(userId):
+    table = dynamodb.Table('DynamoDBTableUsersName')
+    response = table.query(
+        KeyConditionExpression=Key('USER_ID').eq(userId)
+    )
+    
+    return response['Items']
+
+
+def send_no_account_message(event):
+    response_event = {
+        "appId": event['appId'],
+        "message": "Create your account with /account set",
+        "user": event['user'],
+        "token": event['token']
+    }
+    
+    return responseQueue.send_message(MessageBody=json.dumps(response_event))
+
+    
 def get_recommendation(event):
     number = event['number']
     
-    if number <= 0 or number > 100:
+    if number <= 0 or number > 25:
         number = 1
     
     response = personalizeRt.get_recommendations(
@@ -21,17 +42,24 @@ def get_recommendation(event):
         numResults = number
     )
     
+    table = dynamodb.Table('DynamoDBTableSongsName')
     result = ""
     i = 0
     for item in response['itemList']:
         i += 1
         queryResult = table.query(KeyConditionExpression=Key('ITEM_ID').eq(item['itemId']))
-        result += f"{i}. " + queryResult['Items'][0]['ARTISTS'] + " - " + queryResult['Items'][0]['NAME'] + "\n"
+        result += f"**{i}.** " + queryResult['Items'][0]['ARTISTS'] + "```" + queryResult['Items'][0]['NAME'] + "```"
     return result
+
 
 def lambda_handler(event, context):
     data=json.loads(event['Records'][0]['body'])
-
+    
+    user = query_users(data['user']['id'])
+    
+    if not user:
+        return send_no_account_message(data)
+    
     result = get_recommendation(data)
     
     response_event = {

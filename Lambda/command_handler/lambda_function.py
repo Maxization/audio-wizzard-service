@@ -3,6 +3,7 @@ import boto3
 
 sqs = boto3.resource('sqs')
 
+
 def account_handler(event):
     options = event['data']['options']
     action = options[0]['name']
