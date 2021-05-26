@@ -13,7 +13,6 @@ table = dynamodb.Table('DynamoDBTableUsersName')
 
 def add_user_to_personalize(user):
     user_properties = {}
-
     if 'AGE' in user:
         user_properties['AGE'] = user['AGE']
     if 'GENDER' in user:

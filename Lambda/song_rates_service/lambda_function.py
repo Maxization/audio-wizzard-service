@@ -8,9 +8,9 @@ personalize_events = boto3.client(service_name='personalize-events')
 client = boto3.client('comprehend')
 
 sqs = boto3.resource('sqs')
-responseQueue = sqs.get_queue_by_name(QueueName="chat_service_queue")
-
 dynamodb = boto3.resource('dynamodb')
+
+responseQueue = sqs.get_queue_by_name(QueueName="chat_service_queue")
 
 
 def get_song_title(message):
@@ -45,8 +45,6 @@ def add_user_song_rating(event, rating, item_id):
         'rating': int(rating),
         'itemId': item_id
     }
-
-    print(json.dumps(interaction_properties))
 
     personalize_events.put_events(
         trackingId='1d2eb1be-2cef-4569-8c3b-12ba7d3cbc08',

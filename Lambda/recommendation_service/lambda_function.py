@@ -30,6 +30,26 @@ def send_no_account_message(event):
     return responseQueue.send_message(MessageBody=json.dumps(response_event))
 
 
+def query_users(userId):
+    table = dynamodb.Table('DynamoDBTableUsersName')
+    response = table.query(
+        KeyConditionExpression=Key('USER_ID').eq(userId)
+    )
+    
+    return response['Items']
+
+
+def send_no_account_message(event):
+    response_event = {
+        "appId": event['appId'],
+        "message": "Create your account with /account set",
+        "user": event['user'],
+        "token": event['token']
+    }
+    
+    return responseQueue.send_message(MessageBody=json.dumps(response_event))
+
+    
 def get_recommendation(event):
     number = event['number']
 
@@ -47,8 +67,10 @@ def get_recommendation(event):
     i = 0
     for item in response['itemList']:
         i += 1
+
         query_result = table.query(KeyConditionExpression=Key('ITEM_ID').eq(item['itemId']))
         result += f"**{i}.** " + query_result['Items'][0]['ARTISTS'] + "```" + query_result['Items'][0]['NAME'] + "```"
+
     return result
 
 
