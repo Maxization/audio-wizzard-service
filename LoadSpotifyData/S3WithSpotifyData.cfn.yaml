@@ -10,7 +10,7 @@ Resources:
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Retain
     Properties:
-      BucketName: !Join [ "-", [!Ref EnvironmentName, !Ref BucketName] ]
+      BucketName: !Join [ "-", [!Ref EnvironmentName, !Ref BucketName, t54r3w] ]
       Tags:
         - Key: Name
           Value: !Ref BucketName

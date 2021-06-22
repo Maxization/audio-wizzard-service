@@ -1,10 +1,15 @@
+#this one needs to be run manually
 AWSTemplateFormatVersion: '2010-09-09'
 Resources:
   S3Bucket:
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Delete
     Properties:
-      BucketName: !Join [ "-", ["cf-packages" ,!Ref AWS::Region, !Ref AWS::StackId] ]
+      BucketName: !Join [ "-", ["cf-packages" ,!Ref AWS::Region, "78yu09io" ]]
       Tags:
         - Key: Name
           Value: cf-packages
+Outputs:
+  BucketName:
+    Description: The name of S3 for stack packaging
+    Value: !Ref S3Bucket

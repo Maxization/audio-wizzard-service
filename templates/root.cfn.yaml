@@ -3,4 +3,4 @@ Resources:
   IamStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: global/users.cf.yaml
+      TemplateURL: global/users.cfn.yaml

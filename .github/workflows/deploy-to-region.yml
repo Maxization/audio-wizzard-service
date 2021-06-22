@@ -2,19 +2,16 @@ name: Deploy CloudFormation Stacks
 
 # Controls when the action will run.
 on:
-  # Allows you to run this workflow manually from the Actions tab
-  # workflow_dispatch:
-  #   inputs:
-  #     region:
-  #       description: "AWS Region"
-  #       required: true
-  #       default: "eu-west-1" #
   push: #TODO: remove this and set it manually
     branches:
       - dev
 
+env:
+  CF_PACKAGE_BUCKET: cf-packages-eu-west-1-78yu09io
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+
   cfn-deployment:
     runs-on: ubuntu-latest
     steps:
@@ -29,9 +26,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-1 #${{ github.event.inputs.region }} 
 
-      - name: Create S3 bucket for root stack packaging
-        id: s3-packaging
-        uses: aws-actions/aws-cloudformation-github-deploy@v1.0.3
-        with:
-          name:  s3-stack-packaging
-          template: templates/cf-bucket.cfn.yaml
+      # - name: Create root stack package
+      #   id: root-stack-package
+      #   run: |
+      #     aws cloudformation package \
+      #       --template-file root_stack.yml \ 
+      #       --s3-bucket uploading-bucket \
+      #       --output-template-file root_stack.packaged.yml
+      # - name: Deploy root stack
+      #   id: deploy-root-stack
+      #   uses: aws-actions/aws-cloudformation-github-deploy@v1.0.3
+      #   with:
+      #     name:  s3-stack-packaging
+      #     template: 
