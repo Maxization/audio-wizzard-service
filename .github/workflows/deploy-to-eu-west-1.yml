@@ -67,3 +67,12 @@ jobs:
           template: templates/lambdas.cfn.yaml
           no-fail-on-empty-changeset: "1"
         timeout-minutes: 5
+      
+      - name: Deploy API-gateway
+        id: deploy-lambdas
+        uses: aws-actions/aws-cloudformation-github-deploy@v1.0.3
+        with:
+          name:  api-gateway
+          template: templates/api-gateway.cfn.yaml
+          no-fail-on-empty-changeset: "1"
+        timeout-minutes: 5

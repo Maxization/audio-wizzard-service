@@ -16,6 +16,15 @@ Resources:
       Tags:
         - Key: Name
           Value: cf-packages
+  DynamoDataBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Join [ "-", ["dynamo-data" ,!Ref AWS::Region]]
+
+  PersonalizeDatasetsBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Join [ "-", ["personalize-datasets" ,!Ref AWS::Region]]
 Outputs:
   PackagesBucketName:
     Description: The name of S3 for stack packaging
@@ -26,3 +35,15 @@ Outputs:
     Value: !Ref LambdasCodeBucket
     Export:
       Name: LambdasCodeBucketName
+
+  DynamoDataBucketName:
+    Description: bucket for code from lambdas
+    Value: !Ref DynamoDataBucket
+    Export:
+      Name: DynamoDataBucketName
+
+  PersonalizeDatasetsBucketName:
+    Description: bucket for code from lambdas
+    Value: !Ref PersonalizeDatasetsBucket
+    Export:
+      Name: PersonalizeDatasetsBucketName

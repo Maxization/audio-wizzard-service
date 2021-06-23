@@ -152,3 +152,4 @@ fabric.properties
 .secrets
 act
 .actrc
+.DS_STORE

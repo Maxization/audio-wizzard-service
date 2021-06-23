@@ -1,0 +1,150 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Metadata:
+  Generator: "former2"
+Description: ""
+Resources:
+  IAMRolePersonalize:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: "PersonalizeExecutionRole"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"personalize.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+      - "arn:aws:iam::aws:policy/service-role/AmazonPersonalizeFullAccess"
+      - !Ref IAMManagedPersonalize
+      Description: "Personalize execution role created from the Personalize AWS Management Console."
+
+  IAMRoleLambda:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/"
+      RoleName: "LambdaRole"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+      - "arn:aws:iam::aws:policy/ComprehendFullAccess"
+      - "arn:aws:iam::aws:policy/service-role/AmazonPersonalizeFullAccess"
+      - !Ref IAMManagedPolicyLambdaRole
+      Description: "Allows Lambda functions to call AWS services on your behalf."
+
+  IAMRoleDynamoCreation:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/"
+      RoleName: "DynamoCreation"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"lambda.amazonaws.com\",\"s3.amazonaws.com\"]},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+      - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      - "arn:aws:iam::aws:policy/AWSLambdaInvocation-DynamoDB"
+      Description: ""
+
+  IAMServiceLinkedRoleAPIGateway:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "ops.apigateway.amazonaws.com"
+      Description: "The Service Linked Role is used by Amazon API Gateway."
+
+
+  IAMManagedPolicyLambdaExecutionRole:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": "logs:CreateLogGroup",
+                      "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                          "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/websocket-message-handler:*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPersonalize:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "PersonalizeExecutionPolicy"
+      Path: "/service-role/"
+      PolicyDocument: |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "s3:GetObject",
+                          "s3:PutObject",
+                          "s3:ListBucket"
+                      ],
+                      "Resource": [
+                          "arn:aws:s3:::*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPolicyLambdaRole:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "LambdaRole"
+      Path: "/"
+      PolicyDocument: |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Sid": "VisualEditor0",
+                      "Effect": "Allow",
+                      "Action": [
+                          "sqs:DeleteMessage",
+                          "sqs:GetQueueUrl",
+                          "sqs:ChangeMessageVisibility",
+                          "lambda:InvokeFunction",
+                          "sqs:SendMessageBatch",
+                          "sqs:ReceiveMessage",
+                          "sqs:SendMessage",
+                          "sqs:GetQueueAttributes",
+                          "lambda:InvokeAsync",
+                          "sqs:ListQueueTags",
+                          "logs:PutLogEvents",
+                          "logs:CreateLogGroup",
+                          "logs:CreateLogStream",
+                          "secretsmanager:GetSecretValue",
+                          "sqs:ListDeadLetterSourceQueues",
+                          "sqs:DeleteMessageBatch",
+                          "sqs:PurgeQueue",
+                          "sqs:DeleteQueue",
+                          "sqs:CreateQueue",
+                          "sqs:ChangeMessageVisibilityBatch",
+                          "sqs:SetQueueAttributes"
+                      ],
+                      "Resource": "*"
+                  }
+              ]
+          }
+
+  IAMPolicyDynamoCreation:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Action\":[\"dynamodb:PutItem\",\"dynamodb:BatchWriteItem\"],\"Resource\":\"*\",\"Effect\":\"Allow\"}]}"
+      Roles: 
+      - !Ref IAMRoleDynamoCreation
+      PolicyName: "policyname"
+

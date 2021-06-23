@@ -1,3 +1,6 @@
+# Due to the experimental way, those roles were developed, most of them are deployed manually on the main AWS account.
+# They are thus different names, etc.
+# In case one would want to use the once listed below, thy would need to reference them in the deployment instead of current ones
 AWSTemplateFormatVersion: "2010-09-09"
 Description: "Add IAM users"
 Resources:

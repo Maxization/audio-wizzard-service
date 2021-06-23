@@ -57,7 +57,9 @@ Resources:
       Description: "Handles initializing songs from dynamodb"
       Environment: 
         Variables: 
-          bucket: "aws-dynamo-db-data"
+          bucket:
+            Fn::ImportValue:
+              DynamoDataBucketName
           tableSongs: !Ref DynamoDBSongs
           keySongs: "Songs.csv"
       FunctionName: "init_dynamo_songs"
@@ -80,7 +82,10 @@ Resources:
       Description: "InitDynamoUsers loads users data to dynamodb"
       Environment: 
         Variables: 
-          bucket: "aws-dynamo-db-data"
+          bucket: 
+            Fn::ImportValue:
+              DynamoDataBucketName
+          S3Key: init_dynamo_users.zip
           keyUsers: "Users.csv"
           tableUsers: !Ref DynamoDBUsers
       FunctionName: "init_dynamo_users"
