@@ -1,0 +1,197 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ""
+Resources:
+  DiscordEventHandler:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: "DiscordEventHandler is responsible for initial parsing of incoming messages"
+      FunctionName: "discord_event_handler"
+      Handler: "lambda_function.lambda_handler"
+      Code: 
+        S3Bucket: 
+          Fn::ImportValue:
+            LambdasCodeBucketName
+        S3Key: discord_event_handler.zip
+      MemorySize: 128
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LambdaRole"
+      Runtime: "python3.8"
+      Timeout: 3
+      TracingConfig: 
+        Mode: "PassThrough"
+      Layers: 
+      - !Sub "arn:aws:lambda:${AWS::Region}:770693421928:layer:Klayers-python38-PyNaCl:12"
+  SongsRatesService:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: "SongRatesService analyzes songs rating"
+      FunctionName: song_rates_service
+      Handler: "lambda_function.lambda_handler"
+      Code: 
+        S3Bucket: 
+          Fn::ImportValue:
+            LambdasCodeBucketName
+        S3Key: song_rates_service.zip
+      MemorySize: 128
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LambdaRole"
+      Runtime: "python3.8"
+      Timeout: 3
+      TracingConfig: 
+        Mode: "PassThrough"
+
+  UserService:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: "UsersService handles user CRUD"
+      FunctionName: "user_service"
+      Handler: "lambda_function.lambda_handler"
+      Code: 
+        S3Bucket: 
+          Fn::ImportValue:
+            LambdasCodeBucketName
+        S3Key: user_service.zip
+      MemorySize: 128
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LambdaRole"
+      Runtime: "python3.8"
+      Timeout: 3
+      TracingConfig: 
+        Mode: "PassThrough"
+
+  RecommendationService:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: "RecommendationService handles recommendations from Personalize"
+      FunctionName: "recommendation_service"
+      Handler: "lambda_function.lambda_handler"
+      Code: 
+        S3Bucket: 
+          Fn::ImportValue:
+            LambdasCodeBucketName
+        S3Key: recommendation_service.zip
+      MemorySize: 128
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LambdaRole"
+      Runtime: "python3.8"
+      Timeout: 30
+      TracingConfig: 
+        Mode: "PassThrough"
+
+  ChatService:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: "Handles chatting interactions with Discord"
+      FunctionName: "chat_service"
+      Handler: "lambda_function.lambda_handler"
+      Code: 
+        S3Bucket: 
+          Fn::ImportValue:
+            LambdasCodeBucketName
+        S3Key: chat_service.zip
+      MemorySize: 128
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LambdaRole"
+      Runtime: "python3.8"
+      Timeout: 3
+      TracingConfig: 
+        Mode: "PassThrough"
+      Layers: 
+      - !Sub "arn:aws:lambda:${AWS::Region}:770693421928:layer:Klayers-python38-requests:16"
+
+  CommandHandler:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: "Command handler parses commands sent from discord"
+      FunctionName: "command_handler"
+      Handler: "lambda_function.lambda_handler"
+      Code: 
+        S3Bucket: 
+          Fn::ImportValue:
+            LambdasCodeBucketName
+        S3Key: command_handler.zip
+      MemorySize: 128
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LambdaRole"
+      Runtime: "python3.8"
+      Timeout: 3
+      TracingConfig: 
+        Mode: "PassThrough"
+  ApiGatewayRestApi:
+    Type: "AWS::ApiGateway::RestApi"
+    Properties:
+      Name: "audio-wizzard-service-api"
+      ApiKeySourceType: "HEADER"
+      EndpointConfiguration: 
+        Types: 
+        - "REGIONAL"
+
+  ChatServiceQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      DelaySeconds: "0"
+      MaximumMessageSize: "262144"
+      MessageRetentionPeriod: "345600"
+      ReceiveMessageWaitTimeSeconds: "0"
+      VisibilityTimeout: "30"
+      QueueName: chat_service_queue
+
+  RecommendationQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      DelaySeconds: "0"
+      MaximumMessageSize: "262144"
+      MessageRetentionPeriod: "345600"
+      ReceiveMessageWaitTimeSeconds: "0"
+      VisibilityTimeout: "30"
+      QueueName: "recommendation_queue"
+
+  SongsRatesQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      DelaySeconds: "0"
+      MaximumMessageSize: "262144"
+      MessageRetentionPeriod: "345600"
+      ReceiveMessageWaitTimeSeconds: "0"
+      VisibilityTimeout: "30"
+      QueueName: "song_rates_queue"
+
+  UserQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      DelaySeconds: "0"
+      MaximumMessageSize: "262144"
+      MessageRetentionPeriod: "345600"
+      ReceiveMessageWaitTimeSeconds: "0"
+      VisibilityTimeout: "30"
+      QueueName: "user_queue"
+
+  UserServiceEventsMapping:
+    Type: "AWS::Lambda::EventSourceMapping"
+    Properties:
+      BatchSize: 10
+      EventSourceArn: !GetAtt UserQueue.Arn
+      FunctionName: !GetAtt UserService.Arn
+      Enabled: true
+      MaximumBatchingWindowInSeconds: 0
+
+  ChatServiceEventsMapping:
+    Type: "AWS::Lambda::EventSourceMapping"
+    Properties:
+      BatchSize: 10
+      EventSourceArn: !GetAtt ChatServiceQueue.Arn
+      FunctionName: !GetAtt ChatService.Arn
+      Enabled: true
+      MaximumBatchingWindowInSeconds: 0
+
+  SongsRatesEventsMapping:
+    Type: "AWS::Lambda::EventSourceMapping"
+    Properties:
+      BatchSize: 10
+      EventSourceArn: !GetAtt SongsRatesQueue.Arn
+      FunctionName: !GetAtt SongsRatesService.Arn
+      Enabled: true
+      MaximumBatchingWindowInSeconds: 0
+
+  RecommendationEventsMapping:
+    Type: "AWS::Lambda::EventSourceMapping"
+    Properties:
+      BatchSize: 10
+      EventSourceArn: !GetAtt RecommendationQueue.Arn
+      FunctionName: !GetAtt RecommendationService.Arn
+      Enabled: true
+      MaximumBatchingWindowInSeconds: 0

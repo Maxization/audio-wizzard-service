@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Add IAM users"
+Resources:
+  UserAdamRyl:
+    Type: "AWS::IAM::User"
+    Properties:
+      Path: "/"
+      UserName: "adam-ryl"
+      Groups: 
+      - !Ref IAMGroup
+      ManagedPolicyArns: 
+      - "arn:aws:iam::aws:policy/IAMUserChangePassword"
+
+  userArekNoster:
+    Type: "AWS::IAM::User"
+    Properties:
+      Path: "/"
+      UserName: "arek-noster"
+      Groups: 
+      - !Ref IAMGroup
+      ManagedPolicyArns: 
+      - "arn:aws:iam::aws:policy/IAMUserChangePassword"
+
+  UserDamianOpoka:
+    Type: "AWS::IAM::User"
+    Properties:
+      Path: "/"
+      UserName: "damian-opoka"
+      Groups: 
+      - !Ref IAMGroup
+      ManagedPolicyArns: 
+      - "arn:aws:iam::aws:policy/IAMUserChangePassword"
+
+  IAMUser4:
+    Type: "AWS::IAM::User"
+    Properties:
+      Path: "/"
+      UserName: "github-ci"
+      Groups: 
+      - !Ref IAMGroup
+
+  IAMGroup:
+    Type: "AWS::IAM::Group"
+    Properties:
+      Path: "/"
+      GroupName: "Admins"
+      ManagedPolicyArns: 
+      - "arn:aws:iam::aws:policy/AdministratorAccess"
