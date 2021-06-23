@@ -1,0 +1,72 @@
+name: Deploy CloudFormation Stacks to eu-west-1
+
+# Controls when the action will run.
+on:
+  push:
+    branches:
+      - dev #todo: change to main
+
+env:
+  CF_PACKAGE_BUCKET: cf-packages-eu-west-1-78yu09io
+
+jobs:
+  cfn-deployment:
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        working-directory: templates
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        id: creds
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: Deploy deployment-storage-stack
+        id: deploy-deployment-storage-stack
+        uses: aws-actions/aws-cloudformation-github-deploy@v1.0.3
+        with:
+          name:  deployment-storage-stack
+          template: templates/storage.cfn.yaml
+          no-fail-on-empty-changeset: "1"
+
+      - name: Save lambdas bucket name to env
+        id: lambdas-bucket-env
+        run: |
+          LAMBDAS_BUCKET=$(aws cloudformation describe-stacks --stack-name deployment-storage-stack --query "Stacks[0].Outputs[?OutputKey=='LambdasCodeBucketName'].OutputValue" --output text)
+          echo "LAMBDAS_BUCKET=${LAMBDAS_BUCKET}" >> $GITHUB_ENV
+
+      - name: Set stacks bucket env
+        id: stacks-bucket-env
+        run: |
+          STACKS_BUCKET=$(aws cloudformation describe-stacks --stack-name deployment-storage-stack --query "Stacks[0].Outputs[?OutputKey=='PackagesBucketName'].OutputValue" --output text)
+          echo "STACKS_BUCKET=${STACKS_BUCKET}" >> $GITHUB_ENV
+          
+      - name: upload lambdas code
+        id: upload-lambdas-code
+        working-directory: Lambda
+        run: ./create_packages.sh
+        env:
+          LAMBDAS_BUCKET: ${{ env.LAMBDAS_BUCKET }}
+      
+      - name: Deploy dynamodb
+        id: deploy-dynamodb
+        uses: aws-actions/aws-cloudformation-github-deploy@v1.0.3
+        with:
+          name:  lambdas
+          template: templates/dynamodb.cfn.yaml
+          no-fail-on-empty-changeset: "1"
+
+      - name: Deploy lambdas
+        id: deploy-lambdas
+        uses: aws-actions/aws-cloudformation-github-deploy@v1.0.3
+        with:
+          name:  lambdas
+          template: templates/lambdas.cfn.yaml
+          no-fail-on-empty-changeset: "1"
+        timeout-minutes: 5

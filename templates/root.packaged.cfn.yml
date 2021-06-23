@@ -1,6 +1,0 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Resources:
-  IamStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: https://s3.eu-west-1.amazonaws.com/cf-packages-eu-west-1-78yu09io/e0fd955fe1349e403e98e135adc02cfd.template

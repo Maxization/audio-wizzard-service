@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  LambdasCodeBucket:
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Join [ "-", ["lambdas-code" ,!Ref AWS::Region]]
+      Tags:
+        - Key: Name
+          Value: lambdas-code
+  PackagesBucket:
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Join [ "-", ["cf-packages" ,!Ref AWS::Region, "78yu09io" ]]
+      Tags:
+        - Key: Name
+          Value: cf-packages
+Outputs:
+  PackagesBucketName:
+    Description: The name of S3 for stack packaging
+    Value: !Ref PackagesBucket
+
+  LambdasCodeBucketName:
+    Description: bucket for code from lambdas
+    Value: !Ref LambdasCodeBucket
+    Export:
+      Name: LambdasCodeBucketName

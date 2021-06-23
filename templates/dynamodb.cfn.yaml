@@ -1,0 +1,98 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Stack which initializes dynamodb tables"
+Resources:
+  DynamoDBSongs:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      AttributeDefinitions: 
+      - 
+        AttributeName: "ITEM_ID"
+        AttributeType: "S"
+      - 
+        AttributeName: "NAME"
+        AttributeType: "S"
+      BillingMode: "PAY_PER_REQUEST"
+      TableName: "DynamoDBTableSongsName"
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "DynamoDBTableSongsName"
+      KeySchema: 
+      - 
+        AttributeName: "ITEM_ID"
+        KeyType: "HASH"
+      GlobalSecondaryIndexes: 
+      - 
+        IndexName: "NAME-index"
+        KeySchema: 
+        - 
+          AttributeName: "NAME"
+          KeyType: "HASH"
+        Projection: 
+          ProjectionType: "ALL"
+        ProvisionedThroughput: 
+          ReadCapacityUnits: 0
+          WriteCapacityUnits: 0
+
+  DynamoDBUsers:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      AttributeDefinitions: 
+      - 
+        AttributeName: "USER_ID"
+        AttributeType: "S"
+      BillingMode: "PAY_PER_REQUEST"
+      TableName: "DynamoDBTableUsersName"
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "DynamoDBTableUsersName"
+      KeySchema: 
+      - 
+        AttributeName: "USER_ID"
+        KeyType: "HASH"
+  InitDynamoSongs:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: "Handles initializing songs from dynamodb"
+      Environment: 
+        Variables: 
+          bucket: "aws-dynamo-db-data"
+          tableSongs: !Ref DynamoDBSongs
+          keySongs: "Songs.csv"
+      FunctionName: "init_dynamo_songs"
+      Handler: "lambda_function.lambda_handler"
+      Code: 
+        S3Bucket: 
+          Fn::ImportValue:
+            LambdasCodeBucketName
+        S3Key: init_dynamo_songs.zip
+      MemorySize: 3008
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/DynamoDBCreationStack-LambdaForDBRole-9HDTHSA0EX91"
+      Runtime: "python3.7"
+      Timeout: 900
+      TracingConfig: 
+        Mode: "PassThrough"
+
+  InitDynamoUsers:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: "InitDynamoUsers loads users data to dynamodb"
+      Environment: 
+        Variables: 
+          bucket: "aws-dynamo-db-data"
+          keyUsers: "Users.csv"
+          tableUsers: !Ref DynamoDBUsers
+      FunctionName: "init_dynamo_users"
+      Handler: "lambda_function.lambda_handler"
+      Code: 
+        S3Bucket: 
+          Fn::ImportValue:
+            LambdasCodeBucketName
+        S3Key: init_dynamo_users.zip
+      MemorySize: 3008
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/DynamoDBCreationStack-LambdaForDBRole-9HDTHSA0EX91"
+      Runtime: "python3.7"
+      Timeout: 900
+      TracingConfig: 
+        Mode: "PassThrough"
