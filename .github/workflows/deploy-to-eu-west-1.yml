@@ -6,9 +6,6 @@ on:
     branches:
       - main
 
-env:
-  CF_PACKAGE_BUCKET: cf-packages-eu-west-1-78yu09io
-
 jobs:
   cfn-deployment:
     runs-on: ubuntu-20.04
