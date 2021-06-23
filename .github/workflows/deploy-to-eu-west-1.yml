@@ -58,7 +58,7 @@ jobs:
         id: deploy-dynamodb
         uses: aws-actions/aws-cloudformation-github-deploy@v1.0.3
         with:
-          name:  lambdas
+          name:  dynamodb
           template: templates/dynamodb.cfn.yaml
           no-fail-on-empty-changeset: "1"
 

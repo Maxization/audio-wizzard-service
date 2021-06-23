@@ -20,7 +20,7 @@ Resources:
         Mode: "PassThrough"
       Layers: 
       - !Sub "arn:aws:lambda:${AWS::Region}:770693421928:layer:Klayers-python38-PyNaCl:12"
-  SongRatesService:
+  SongsRatesService:
     Type: "AWS::Lambda::Function"
     Properties:
       Description: "SongRatesService analyzes songs rating"
@@ -164,8 +164,8 @@ Resources:
     Type: "AWS::Lambda::EventSourceMapping"
     Properties:
       BatchSize: 10
-      EventSourceArn: !Ref UserQueue
-      FunctionName: !Ref UserService
+      EventSourceArn: !GetAtt UserQueue.Arn
+      FunctionName: !GetAtt UserService.Arn
       Enabled: true
       MaximumBatchingWindowInSeconds: 0
 
@@ -173,8 +173,8 @@ Resources:
     Type: "AWS::Lambda::EventSourceMapping"
     Properties:
       BatchSize: 10
-      EventSourceArn: !Ref ChatServiceQueue
-      FunctionName: !Ref ChatService
+      EventSourceArn: !GetAtt ChatServiceQueue.Arn
+      FunctionName: !GetAtt ChatService.Arn
       Enabled: true
       MaximumBatchingWindowInSeconds: 0
 
@@ -182,8 +182,8 @@ Resources:
     Type: "AWS::Lambda::EventSourceMapping"
     Properties:
       BatchSize: 10
-      EventSourceArn: !Ref SongsRatesQueue
-      FunctionName: !Ref SongRatesService
+      EventSourceArn: !GetAtt SongsRatesQueue.Arn
+      FunctionName: !GetAtt SongsRatesService.Arn
       Enabled: true
       MaximumBatchingWindowInSeconds: 0
 
@@ -191,7 +191,7 @@ Resources:
     Type: "AWS::Lambda::EventSourceMapping"
     Properties:
       BatchSize: 10
-      EventSourceArn: !Ref RecommendationQueue
-      FunctionName: !Ref RecommendationService
+      EventSourceArn: !GetAtt RecommendationQueue.Arn
+      FunctionName: !GetAtt RecommendationService.Arn
       Enabled: true
       MaximumBatchingWindowInSeconds: 0
