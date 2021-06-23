@@ -4,7 +4,7 @@ name: Deploy CloudFormation Stacks to eu-west-1
 on:
   push:
     branches:
-      - dev #todo: change to main
+      - main
 
 env:
   CF_PACKAGE_BUCKET: cf-packages-eu-west-1-78yu09io
